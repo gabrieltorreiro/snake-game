@@ -7,7 +7,7 @@ class Game {
         this.height = this.blockSize * 15;
         this.canvas.width = this.width;
         this.canvas.height = this.height;
-        this.fruit = { x: 0, y: 0 };
+        this.fruit = new Fruit();
     }
 
     resetVariables() {
@@ -21,16 +21,6 @@ class Game {
         this.score = 0;
     }
 
-    createFruit() {
-        let x = Math.floor(Math.random() * 15) * this.blockSize;
-        let y = Math.floor(Math.random() * 15) * this.blockSize;
-        for (let bodyPart of this.snake) {
-            if (bodyPart.x == x && bodyPart.y == y)
-                return this.createFruit();
-        }
-        this.fruit = { x, y };
-    }
-
     restart() {
         this.stop();
         this.start();
@@ -38,7 +28,7 @@ class Game {
 
     start() {
         this.resetVariables();
-        this.createFruit();
+        this.fruit.createFruit(this.snake, this.blockSize, 15, 15);
         this.interval = window.setInterval(() => {
             this.update();
             this.draw();
@@ -97,9 +87,9 @@ class Game {
 
     update() {
         let lastHeadPosition = this.snake[0];
-        if (this.snake[0].x == this.fruit.x && this.snake[0].y == this.fruit.y) {
+        if (this.fruit.detectColision(this.snake[0])) {
             this.score++;
-            this.createFruit();
+            this.fruit.createFruit(this.snake, this.blockSize, 15, 15);
         } else {
             this.snake.pop();
         }
@@ -122,8 +112,7 @@ class Game {
         this.ctx.fillRect(this.snake[0].x, this.snake[0].y, this.blockSize, this.blockSize);
         this.ctx.font = "20px Arial";
         this.ctx.fillText(`Score: ${this.score}`, 10, 20);
-        this.ctx.fillStyle = "red";
-        this.ctx.fillRect(this.fruit.x, this.fruit.y, this.blockSize, this.blockSize);
+        this.fruit.draw(this.ctx, this.blockSize);
         if (this.gameOver) {
             this.ctx.fillStyle = "black";
             this.ctx.font = "50px Arial";
@@ -134,6 +123,36 @@ class Game {
             this.ctx.fillText(`Press "Space" to continue`, 110, 250);
         }
     }
+
+}
+
+class Fruit {
+    constructor() {
+        this.position = {
+            x: 0,
+            y: 0
+        }
+    }
+
+    createFruit(snake, blockSize, width, height) {
+        let x = Math.floor(Math.random() * width) * blockSize;
+        let y = Math.floor(Math.random() * height) * blockSize;
+        for (let bodyPart of snake) {
+            if (bodyPart.x == x && bodyPart.y == y)
+                return this.createFruit();
+        }
+        this.position = { x, y };
+    }
+
+    detectColision(snakeHead) {
+        return snakeHead.x == this.position.x && snakeHead.y == this.position.y
+    }
+
+    draw(ctx, blockSize) {
+        ctx.fillStyle = "red";
+        ctx.fillRect(this.position.x, this.position.y, blockSize, blockSize);
+    }
+
 
 }
 
