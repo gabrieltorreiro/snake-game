@@ -10,6 +10,10 @@
 ![Screenshot](/screenshot1.png)
 ![Screenshot](/screenshot2.png)
 
+## Comandos o jogo
+
+**Use as setas do teclado para mover**
+
 ## Instruções
 
 ```
