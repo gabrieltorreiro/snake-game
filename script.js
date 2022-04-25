@@ -8,15 +8,11 @@ class Game {
         this.canvas.width = this.width;
         this.canvas.height = this.height;
         this.fruit = new Fruit();
+        this.snake = new Snake(this.blockSize);
     }
 
     resetVariables() {
-        this.velocityX = 0;
-        this.velocityY = 0;
-        this.snake = [{
-            x: this.blockSize * 7,
-            y: this.blockSize * 7
-        }];
+        this.snake = new Snake(this.blockSize);
         this.gameOver = false;
         this.score = 0;
     }
@@ -28,7 +24,7 @@ class Game {
 
     start() {
         this.resetVariables();
-        this.fruit.createFruit(this.snake, this.blockSize, 15, 15);
+        this.fruit.createFruit(this.snake.body, this.blockSize, 15, 15);
         this.interval = window.setInterval(() => {
             this.update();
             this.draw();
@@ -39,80 +35,34 @@ class Game {
         window.clearInterval(this.interval);
     }
 
-    execCommand(command) {
-        this.commands = {
-            ArrowUp: () => {
-                if (this.velocityY != 1) {
-                    this.velocityY = -1;
-                    this.velocityX = 0;
-                }
-            },
-            ArrowDown: () => {
-                if (this.velocityY != -1) {
-                    this.velocityY = +1;
-                    this.velocityX = 0;
-                }
-            },
-            ArrowRight: () => {
-                if (this.velocityX != -1) {
-                    this.velocityX = +1;
-                    this.velocityY = 0;
-                }
-            },
-            ArrowLeft: () => {
-                if (this.velocityX != 1) {
-                    this.velocityX = -1;
-                    this.velocityY = 0;
-                }
-            },
-            Space: () => {
-                if (this.gameOver) {
-                    this.restart();
-                }
-            }
+    execCommand(event) {
+        if (this.gameOver && event == "Space") {
+            this.restart();
+        } else {
+            this.snake.execCommand(event);
         }
-        this.commands[command] && this.commands[command]();
-    }
-
-    detectColision() {
-        let head = this.snake[0];
-        if (head.x >= this.width || head.x < 0 || head.y >= this.height || head.y < 0)
-            return true;
-        for (let i = 1; i < this.snake.length; i++) {
-            if (head.x == this.snake[i].x && head.y == this.snake[i].y)
-                return true;
-        }
-        return false;
     }
 
     update() {
-        let lastHeadPosition = this.snake[0];
-        if (this.fruit.detectColision(this.snake[0])) {
+        this.snake.moveHead();
+        if (this.fruit.detectColision(this.snake.body[0])) {
             this.score++;
-            this.fruit.createFruit(this.snake, this.blockSize, 15, 15);
+            this.fruit.createFruit(this.snake.body, this.blockSize, 15, 15);
         } else {
-            this.snake.pop();
+            this.snake.removeTail();
         }
-        this.snake.unshift({ ...lastHeadPosition });
-        this.snake[0].x += this.velocityX * this.blockSize;
-        this.snake[0].y += this.velocityY * this.blockSize;
-        if (this.detectColision() == true) {
-            this.gameOver = true;
+        if (this.snake.detectSelfColision() || this.snake.detectWallColision(this.width, this.height)) {
             this.stop();
+            this.gameOver = true;
         }
     }
 
     draw() {
         this.ctx.clearRect(0, 0, this.width, this.height);
-        this.ctx.fillStyle = "green";
-        for (let bodyParts of this.snake) {
-            bodyParts && this.ctx.fillRect(bodyParts.x, bodyParts.y, this.blockSize, this.blockSize);
-        }
-        this.ctx.fillStyle = "black";
-        this.ctx.fillRect(this.snake[0].x, this.snake[0].y, this.blockSize, this.blockSize);
+        this.fruit.draw(this.ctx, this.blockSize);
+        this.snake.draw(this.ctx);
         this.ctx.font = "20px Arial";
         this.ctx.fillText(`Score: ${this.score}`, 10, 20);
-        this.fruit.draw(this.ctx, this.blockSize);
         if (this.gameOver) {
             this.ctx.fillStyle = "black";
             this.ctx.font = "50px Arial";
@@ -124,6 +74,73 @@ class Game {
         }
     }
 
+}
+
+class Snake {
+    constructor(blockSize) {
+        this.velocityX = 0;
+        this.velocityY = 0;
+        this.body = [{
+            x: blockSize * 7,
+            y: blockSize * 7
+        }];
+        this.blockSize = blockSize;
+    }
+
+    execCommand(command) {
+        if (command == "ArrowUp" && (this.velocityY != +1 || this.body.length == 1)) {
+            this.velocityY = -1;
+            this.velocityX = 0;
+        }
+        if (command == "ArrowDown" && (this.velocityY != -1 || this.body.length == 1)) {
+            this.velocityY = +1;
+            this.velocityX = 0;
+        }
+        if (command == "ArrowRight" && (this.velocityX != -1 || this.body.length == 1)) {
+            this.velocityY = 0;
+            this.velocityX = +1;
+        }
+        if (command == "ArrowLeft" && (this.velocityX != +1 || this.body.length == 1)) {
+            this.velocityY = 0;
+            this.velocityX = -1;
+        }
+    }
+
+    moveHead() {
+        this.body.unshift({
+            x: this.body[0].x + (this.velocityX * this.blockSize),
+            y: this.body[0].y + (this.velocityY * this.blockSize)
+        })
+    }
+
+    removeTail() {
+        this.body.pop();
+    }
+
+    detectWallColision(width, height) {
+        let head = this.body[0];
+        if (!(head.x >= 0 && head.x < width && head.y >= 0 && head.y < height))
+            return true;
+        return false;
+    }
+
+    detectSelfColision() {
+        let head = this.body[0];
+        for (let i = 1; i < this.body.length; i++) {
+            if (head.x == this.body[i].x && head.y == this.body[i].y)
+                return true;
+        }
+        return false;
+    }
+
+    draw(ctx) {
+        ctx.fillStyle = "green";
+        for (let bodyParts of this.body) {
+            bodyParts && ctx.fillRect(bodyParts.x, bodyParts.y, this.blockSize, this.blockSize);
+        }
+        ctx.fillStyle = "black";
+        ctx.fillRect(this.body[0].x, this.body[0].y, this.blockSize, this.blockSize);
+    }
 }
 
 class Fruit {
