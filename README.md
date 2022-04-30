@@ -10,13 +10,20 @@
 ![Screenshot](/screenshot1.png)
 ![Screenshot](/screenshot2.png)
 
-## Comandos o jogo
+## Comandos do jogo
 
-**Use as setas do teclado para mover**
+* Use as setas do teclado para mover
+* Pegue os quadrados vermelhos para ganhar ponto
 
-## Instruções
+## Como rodar?
+
+1. Método
 
 ```
     git clone https://github.com/Gabrieltorreiro/snake-game
     abra index.html no seu browser.
 ```
+
+2. Método
+
+    Acesse o link: [site do jogo](https://master.d29kyj1e9b236o.amplifyapp.com/)
