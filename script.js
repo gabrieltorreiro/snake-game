@@ -42,11 +42,12 @@ class Canvas {
 }
 
 class Game {
-    constructor(canvas, fruit, snake, createFruit) {
+    constructor(canvas, fruit, snake, createFruit, detectFruitColision) {
         this.canvas = canvas;
         this.fruit = fruit;
         this.snake = snake;
         this.createFruit = createFruit;
+        this.detectFruitColision = detectFruitColision;
     }
 
     resetVariables() {
@@ -83,7 +84,7 @@ class Game {
 
     update() {
         this.snake.moveHead();
-        if (this.fruit.detectColision(this.snake.body[0])) {
+        if (this.detectFruitColision.execute(this.snake.body[0], this.fruit)) {
             this.score++;
             this.fruit.position = this.createFruit.execute(this.snake.body, this.canvas.blockSize, 15, 15);
         } else {
@@ -175,6 +176,12 @@ class CreateFruit {
     }
 }
 
+class DetectFruitColision {
+    execute(snakeHead, fruit) {
+        return snakeHead.x == fruit.position.x && snakeHead.y == fruit.position.y
+    }
+}
+
 class Fruit {
     constructor() {
         this.position = {
@@ -182,11 +189,6 @@ class Fruit {
             y: 0
         }
     }
-
-    detectColision(snakeHead) {
-        return snakeHead.x == this.position.x && snakeHead.y == this.position.y
-    }
-
 }
 
 addEventListener("keydown", (e) => {
@@ -197,5 +199,6 @@ const canvas = new Canvas();
 const fruit = new Fruit();
 const snake = new Snake(canvas.blockSize);
 const createFruit = new CreateFruit();
-const game = new Game(canvas, fruit, snake, createFruit);
+const detectColision = new DetectFruitColision();
+const game = new Game(canvas, fruit, snake, createFruit, detectColision);
 game.start();
