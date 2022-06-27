@@ -42,10 +42,10 @@ class Canvas {
 }
 
 class Game {
-    constructor(canvas) {
+    constructor(canvas, fruit, snake) {
         this.canvas = canvas;
-        this.fruit = new Fruit();
-        this.snake = new Snake(this.canvas.blockSize);
+        this.fruit = fruit;
+        this.snake = snake;
     }
 
     resetVariables() {
@@ -186,5 +186,7 @@ addEventListener("keydown", (e) => {
 });
 
 const canvas = new Canvas();
-const game = new Game(canvas);
+const fruit = new Fruit;
+const snake = new Snake(canvas.blockSize);
+const game = new Game(canvas, fruit, snake);
 game.start();
