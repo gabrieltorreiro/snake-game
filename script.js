@@ -1,5 +1,5 @@
-class Game {
-    constructor() {
+class Canvas {
+    constructor(){
         this.canvas = document.querySelector("canvas");
         this.ctx = this.canvas.getContext('2d');
         this.blockSize = 30;
@@ -7,12 +7,49 @@ class Game {
         this.height = this.blockSize * 15;
         this.canvas.width = this.width;
         this.canvas.height = this.height;
+    }
+
+    draw(snake, fruit, score, gameOver){
+        this.ctx.clearRect(0, 0, this.width, this.height);
+        this.drawFruit(fruit);
+        this.drawSnake(snake);
+        this.ctx.font = "20px Arial";
+        this.ctx.fillText(`Score: ${score}`, 10, 20);
+        if (gameOver) {
+            this.ctx.fillStyle = "black";
+            this.ctx.font = "50px Arial";
+            this.ctx.fillText(`Game Over`, 100, 150);
+            this.ctx.fillText(`Score: ${score}`, 130, 210);
+            this.ctx.font = "20px Arial";
+            this.ctx.fillStyle = "orange";
+            this.ctx.fillText(`Press "Space" to continue`, 110, 250);
+        }
+    }
+
+    drawSnake(snake){
+        this.ctx.fillStyle = "green";
+        for (let bodyParts of snake.body) {
+            bodyParts && this.ctx.fillRect(bodyParts.x, bodyParts.y, this.blockSize, this.blockSize);
+        }
+        this.ctx.fillStyle = "black";
+        this.ctx.fillRect(snake.body[0].x, snake.body[0].y, this.blockSize, this.blockSize);
+    }
+
+    drawFruit(fruit) {
+        this.ctx.fillStyle = "red";
+        this.ctx.fillRect(fruit.position.x, fruit.position.y, this.blockSize, this.blockSize);
+    }
+}
+
+class Game {
+    constructor(canvas) {
+        this.canvas = canvas;
         this.fruit = new Fruit();
-        this.snake = new Snake(this.blockSize);
+        this.snake = new Snake(this.canvas.blockSize);
     }
 
     resetVariables() {
-        this.snake = new Snake(this.blockSize);
+        this.snake = new Snake(this.canvas.blockSize);
         this.gameOver = false;
         this.score = 0;
     }
@@ -24,7 +61,7 @@ class Game {
 
     start() {
         this.resetVariables();
-        this.fruit.createFruit(this.snake.body, this.blockSize, 15, 15);
+        this.fruit.createFruit(this.snake.body, this.canvas.blockSize, 15, 15);
         this.interval = window.setInterval(() => {
             this.update();
             this.draw();
@@ -47,33 +84,19 @@ class Game {
         this.snake.moveHead();
         if (this.fruit.detectColision(this.snake.body[0])) {
             this.score++;
-            this.fruit.createFruit(this.snake.body, this.blockSize, 15, 15);
+            this.fruit.createFruit(this.snake.body, this.canvas.blockSize, 15, 15);
         } else {
             this.snake.removeTail();
         }
-        if (this.snake.detectSelfColision() || this.snake.detectWallColision(this.width, this.height)) {
+        if (this.snake.detectSelfColision() || this.snake.detectWallColision(this.canvas.width, this.canvas.height)) {
             this.stop();
             this.gameOver = true;
         }
     }
 
     draw() {
-        this.ctx.clearRect(0, 0, this.width, this.height);
-        this.fruit.draw(this.ctx, this.blockSize);
-        this.snake.draw(this.ctx);
-        this.ctx.font = "20px Arial";
-        this.ctx.fillText(`Score: ${this.score}`, 10, 20);
-        if (this.gameOver) {
-            this.ctx.fillStyle = "black";
-            this.ctx.font = "50px Arial";
-            this.ctx.fillText(`Game Over`, 100, 150);
-            this.ctx.fillText(`Score: ${this.score}`, 130, 210);
-            this.ctx.font = "20px Arial";
-            this.ctx.fillStyle = "orange";
-            this.ctx.fillText(`Press "Space" to continue`, 110, 250);
-        }
+        this.canvas.draw(this.snake, this.fruit, this.score, this.gameOver);
     }
-
 }
 
 class Snake {
@@ -132,15 +155,6 @@ class Snake {
         }
         return false;
     }
-
-    draw(ctx) {
-        ctx.fillStyle = "green";
-        for (let bodyParts of this.body) {
-            bodyParts && ctx.fillRect(bodyParts.x, bodyParts.y, this.blockSize, this.blockSize);
-        }
-        ctx.fillStyle = "black";
-        ctx.fillRect(this.body[0].x, this.body[0].y, this.blockSize, this.blockSize);
-    }
 }
 
 class Fruit {
@@ -165,17 +179,12 @@ class Fruit {
         return snakeHead.x == this.position.x && snakeHead.y == this.position.y
     }
 
-    draw(ctx, blockSize) {
-        ctx.fillStyle = "red";
-        ctx.fillRect(this.position.x, this.position.y, blockSize, blockSize);
-    }
-
-
 }
 
 addEventListener("keydown", (e) => {
     game.execCommand(e.code);
 });
 
-let game = new Game();
+const canvas = new Canvas();
+const game = new Game(canvas);
 game.start();
