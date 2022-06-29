@@ -42,13 +42,14 @@ class Canvas {
 }
 
 class Game {
-    constructor(canvas, fruit, snake, createFruit, detectFruitColision, board) {
+    constructor(canvas, fruit, snake, createFruit, detectFruitColision, board, detectSnakeColision) {
         this.boardSize = board.size;
         this.canvas = canvas;
         this.fruit = fruit;
         this.snake = snake;
         this.createFruit = createFruit;
         this.detectFruitColision = detectFruitColision;
+        this.detectSnakeColision = detectSnakeColision;
     }
 
     resetVariables() {
@@ -91,7 +92,7 @@ class Game {
         } else {
             this.snake.removeTail();
         }
-        if (this.snake.detectSelfColision() || this.snake.detectWallColision(this.boardSize)) {
+        if (this.detectSnakeColision.execute(this.snake, this.boardSize)) {
             this.stop();
             this.gameOver = true;
         }
@@ -99,6 +100,28 @@ class Game {
 
     draw() {
         this.canvas.draw(this.snake, this.fruit, this.score, this.gameOver);
+    }
+}
+
+class DetectSnakeColision {
+    execute(snake, boardSize){
+        return this.detectSelfColision(snake) || this.detectWallColision(snake, boardSize)
+    }
+
+    detectWallColision(snake, boardSize) {
+        let head = snake.body[0];
+        if (!(head.x >= 0 && head.x < boardSize && head.y >= 0 && head.y < boardSize))
+            return true;
+        return false;
+    }
+    
+    detectSelfColision(snake) {
+        let head = snake.body[0];
+        for (let i = 1; i < snake.body.length; i++) {
+            if (head.x == snake.body[i].x && head.y == snake.body[i].y)
+                return true;
+        }
+        return false;
     }
 }
 
@@ -141,22 +164,6 @@ class Snake {
 
     removeTail() {
         this.body.pop();
-    }
-
-    detectWallColision(boardSize) {
-        let head = this.body[0];
-        if (!(head.x >= 0 && head.x < boardSize && head.y >= 0 && head.y < boardSize))
-            return true;
-        return false;
-    }
-    
-    detectSelfColision() {
-        let head = this.body[0];
-        for (let i = 1; i < this.body.length; i++) {
-            if (head.x == this.body[i].x && head.y == this.body[i].y)
-                return true;
-        }
-        return false;
     }
 
     reset() {
@@ -216,6 +223,7 @@ const canvas = new Canvas(board);
 const fruit = new Fruit();
 const snake = new Snake(board);
 const createFruit = new CreateFruit(board);
-const detectColision = new DetectFruitColision();
-const game = new Game(canvas, fruit, snake, createFruit, detectColision, board);
+const detectFruitColision = new DetectFruitColision();
+const detectSnakeColision = new DetectSnakeColision();
+const game = new Game(canvas, fruit, snake, createFruit, detectFruitColision, board, detectSnakeColision);
 game.start();
