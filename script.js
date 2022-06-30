@@ -68,7 +68,7 @@ class Game {
         this.fruit.position = this.createFruit.execute(this.snake.body);
         this.interval = window.setInterval(() => {
             this.update();
-            this.draw();
+            this.canvas.draw(this.snake, this.fruit, this.score, this.gameOver);
         }, 1000 / 10);
     }
 
@@ -96,10 +96,6 @@ class Game {
             this.stop();
             this.gameOver = true;
         }
-    }
-
-    draw() {
-        this.canvas.draw(this.snake, this.fruit, this.score, this.gameOver);
     }
 }
 
