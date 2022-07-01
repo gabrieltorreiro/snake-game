@@ -223,6 +223,7 @@ class Restart {
         if (keycode == "Space" && this.board.gameOver) {
             this.snake.reset();
             this.board.gameOver = false;
+            this.board.score = 0;
             this.createFruit.execute();
         }
     }
