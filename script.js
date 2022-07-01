@@ -1,5 +1,5 @@
 class Canvas {
-    constructor(board){
+    constructor(board, snake, fruit) {
         this.canvas = document.querySelector("canvas");
         this.ctx = this.canvas.getContext('2d');
         this.blockSize = 30;
@@ -7,117 +7,224 @@ class Canvas {
         this.height = this.blockSize * board.size;
         this.canvas.width = this.width;
         this.canvas.height = this.height;
+        this.board = board;
+        this.snake = snake;
+        this.fruit = fruit;
     }
 
-    draw(snake, fruit, score, gameOver){
+    execute() {
         this.ctx.clearRect(0, 0, this.width, this.height);
-        this.drawFruit(fruit);
-        this.drawSnake(snake);
+        this.drawFruit();
+        this.drawSnake();
         this.ctx.font = "20px Arial";
-        this.ctx.fillText(`Score: ${score}`, 10, 20);
-        if (gameOver) {
+        this.ctx.fillText(`Score: ${this.board.score}`, 10, 20);
+        if (this.board.gameOver) {
             this.ctx.fillStyle = "black";
             this.ctx.font = "50px Arial";
             this.ctx.fillText(`Game Over`, 100, 150);
-            this.ctx.fillText(`Score: ${score}`, 130, 210);
+            this.ctx.fillText(`Score: ${this.board.score}`, 130, 210);
             this.ctx.font = "20px Arial";
             this.ctx.fillStyle = "orange";
             this.ctx.fillText(`Press "Space" to continue`, 110, 250);
         }
     }
 
-    drawSnake(snake){
+    drawSnake() {
         this.ctx.fillStyle = "green";
-        for (let bodyParts of snake.body) {
-            bodyParts && this.ctx.fillRect(bodyParts.x * this.blockSize, bodyParts.y * this.blockSize, this.blockSize, this.blockSize);
+        for (let bodyParts of this.snake.body) {
+            bodyParts && this.ctx.fillRect(
+                bodyParts.x * this.blockSize,
+                bodyParts.y * this.blockSize,
+                this.blockSize,
+                this.blockSize
+            );
         }
         this.ctx.fillStyle = "black";
-        this.ctx.fillRect(snake.body[0].x * this.blockSize, snake.body[0].y * this.blockSize, this.blockSize, this.blockSize);
+        this.ctx.fillRect(this.snake.body[0].x * this.blockSize,
+            this.snake.body[0].y * this.blockSize,
+            this.blockSize,
+            this.blockSize
+        );
     }
 
-    drawFruit(fruit) {
+    drawFruit() {
         this.ctx.fillStyle = "red";
-        this.ctx.fillRect(fruit.position.x * this.blockSize, fruit.position.y * this.blockSize, this.blockSize, this.blockSize);
+        this.ctx.fillRect(
+            this.fruit.position.x * this.blockSize,
+            this.fruit.position.y * this.blockSize,
+            this.blockSize,
+            this.blockSize
+        );
     }
 }
 
-class Game {
-    constructor(canvas, fruit, snake, createFruit, detectFruitColision, board, detectSnakeColision) {
-        this.boardSize = board.size;
-        this.canvas = canvas;
-        this.fruit = fruit;
-        this.snake = snake;
-        this.createFruit = createFruit;
-        this.detectFruitColision = detectFruitColision;
-        this.detectSnakeColision = detectSnakeColision;
-    }
-
-    resetVariables() {
-        this.snake.reset();
-        this.gameOver = false;
-        this.score = 0;
-    }
-
-    restart() {
-        this.stop();
-        this.start();
-    }
-
-    start() {
-        this.resetVariables();
-        this.fruit.position = this.createFruit.execute(this.snake.body);
-        this.interval = window.setInterval(() => {
-            this.update();
-            this.canvas.draw(this.snake, this.fruit, this.score, this.gameOver);
+class GameLoopEvent {
+    constructor() {
+        this.observers = [];
+        window.setInterval(() => {
+            this.notify();
         }, 1000 / 10);
     }
 
-    stop() {
-        window.clearInterval(this.interval);
+    attach(observer) {
+        this.observers.push(observer);
     }
 
-    execCommand(event) {
-        if (this.gameOver && event == "Space") {
-            this.restart();
-        } else {
-            this.snake.execCommand(event);
+    detach(observer) {
+        this.observers = this.observers.filter(obs => obs !== observer);
+    }
+
+    notify() {
+        this.observers.forEach(observer => observer.execute());
+    }
+}
+
+class KeyboardEvent {
+    constructor() {
+        this.observers = [];
+        addEventListener("keydown", (e) => {
+            this.notify(e.code);
+        });
+    }
+
+    attach(observer) {
+        this.observers.push(observer);
+    }
+
+    detach(observer) {
+        this.observers = this.observers.filter(obs => obs !== observer);
+    }
+
+    notify(keycode) {
+        this.observers.forEach(observer => observer.execute(keycode));
+    }
+}
+
+class MoveSnake {
+    constructor(snake, board, detectFruitColision, createFruit) {
+        this.snake = snake;
+        this.board = board;
+        this.detectFruitColision = detectFruitColision;
+        this.createFruit = createFruit;
+    }
+
+    execute() {
+        if (!this.board.gameOver) {
+            this.moveHead();
+            if (this.detectFruitColision.execute()) {
+                this.board.score++;
+                createFruit.execute();
+            } else {
+                this.removeTail();
+            }
         }
     }
 
-    update() {
-        this.snake.moveHead();
-        if (this.detectFruitColision.execute(this.snake.body[0], this.fruit)) {
-            this.score++;
-            this.fruit.position = this.createFruit.execute(this.snake.body);
-        } else {
-            this.snake.removeTail();
-        }
-        if (this.detectSnakeColision.execute(this.snake, this.boardSize)) {
-            this.stop();
-            this.gameOver = true;
-        }
+    moveHead() {
+        this.snake.body.unshift({
+            x: this.snake.body[0].x + this.snake.velocityX,
+            y: this.snake.body[0].y + this.snake.velocityY
+        })
+    }
+
+    removeTail() {
+        this.snake.body.pop();
     }
 }
 
 class DetectSnakeColision {
-    execute(snake, boardSize){
-        return this.detectSelfColision(snake) || this.detectWallColision(snake, boardSize)
+    constructor(snake, board) {
+        this.snake = snake;
+        this.board = board;
     }
 
-    detectWallColision(snake, boardSize) {
-        let head = snake.body[0];
-        if (!(head.x >= 0 && head.x < boardSize && head.y >= 0 && head.y < boardSize))
+    execute() {
+        if (this.detectWallColision() || this.detectSelfColision()) {
+            this.board.gameOver = true;
+        }
+    }
+
+    detectWallColision() {
+        let head = this.snake.body[0];
+        if (!(head.x >= 0 && head.x < this.board.size && head.y >= 0 && head.y < this.board.size)) {
+            console.log('wall');
             return true;
+        }
         return false;
     }
-    
-    detectSelfColision(snake) {
-        let head = snake.body[0];
-        for (let i = 1; i < snake.body.length; i++) {
-            if (head.x == snake.body[i].x && head.y == snake.body[i].y)
+
+    detectSelfColision() {
+        console.log('self');
+        let head = this.snake.body[0];
+        for (let bodyIndex = 1; bodyIndex < this.snake.body.length; bodyIndex++) {
+            let bodyPart = this.snake.body[bodyIndex];
+            if (head.x === bodyPart.x && head.y === bodyPart.y)
                 return true;
         }
         return false;
+    }
+}
+
+class UpMove {
+    constructor(snake) {
+        this.snake = snake;
+    }
+    execute(keycode) {
+        if (keycode == "ArrowUp" && (this.snake.velocityY != +1 || this.snake.body.length == 1)) {
+            this.snake.velocityX = 0;
+            this.snake.velocityY = -1;
+        }
+    }
+}
+
+class DownMove {
+    constructor(snake) {
+        this.snake = snake;
+    }
+    execute(keycode) {
+        if (keycode == "ArrowDown" && (this.snake.velocityY != -1 || this.snake.body.length == 1)) {
+            this.snake.velocityX = 0;
+            this.snake.velocityY = +1;
+        }
+    }
+}
+
+class RightMove {
+    constructor(snake) {
+        this.snake = snake;
+    }
+    execute(keycode) {
+        if (keycode == "ArrowRight" && (this.snake.velocityX != -1 || this.snake.body.length == 1)) {
+            this.snake.velocityX = 1;
+            this.snake.velocityY = 0;
+        }
+    }
+}
+
+class LeftMove {
+    constructor(snake) {
+        this.snake = snake;
+    }
+    execute(keycode) {
+        if (keycode == "ArrowLeft" && (this.snake.velocityX != +1 || this.snake.body.length == 1)) {
+            this.snake.velocityX = -1;
+            this.snake.velocityY = 0;
+        }
+    }
+}
+
+class Restart {
+    constructor(snake, board, createFruit) {
+        this.snake = snake;
+        this.board = board;
+        this.createFruit = createFruit;
+    }
+    execute(keycode) {
+        if (keycode == "Space" && this.board.gameOver) {
+            this.snake.reset();
+            this.board.gameOver = false;
+            this.createFruit.execute();
+        }
     }
 }
 
@@ -127,77 +234,55 @@ class Snake {
         this.velocityX = 0;
         this.velocityY = 0;
         this.body = [{
-            x: Math.floor(this.board.size/2),
-            y: Math.floor(this.board.size/2)
+            x: Math.floor(this.board.size / 2),
+            y: Math.floor(this.board.size / 2)
         }];
-    }
-
-    execCommand(command) {
-        if (command == "ArrowUp" && (this.velocityY != +1 || this.body.length == 1)) {
-            this.velocityY = -1;
-            this.velocityX = 0;
-        }
-        if (command == "ArrowDown" && (this.velocityY != -1 || this.body.length == 1)) {
-            this.velocityY = +1;
-            this.velocityX = 0;
-        }
-        if (command == "ArrowRight" && (this.velocityX != -1 || this.body.length == 1)) {
-            this.velocityY = 0;
-            this.velocityX = +1;
-        }
-        if (command == "ArrowLeft" && (this.velocityX != +1 || this.body.length == 1)) {
-            this.velocityY = 0;
-            this.velocityX = -1;
-        }
-    }
-
-    moveHead() {
-        this.body.unshift({
-            x: this.body[0].x + this.velocityX,
-            y: this.body[0].y + this.velocityY
-        })
-    }
-
-    removeTail() {
-        this.body.pop();
     }
 
     reset() {
         this.velocityX = 0;
         this.velocityY = 0;
         this.body = [{
-            x: Math.floor(this.board.size/2),
-            y: Math.floor(this.board.size/2)
+            x: Math.floor(this.board.size / 2),
+            y: Math.floor(this.board.size / 2)
         }];
     }
 
 }
 
 class Board {
-    constructor(size){
+    constructor(size) {
         this.size = size;
+        this.score = 0;
+        this.gameOver = false;
     }
 }
 
 class CreateFruit {
-    constructor(board){
+    constructor(board, snake, fruit) {
         this.board = board;
+        this.snake = snake;
+        this.fruit = fruit;
     }
 
-    execute(snake) {
+    execute() {
         let x = Math.floor(Math.random() * this.board.size);
         let y = Math.floor(Math.random() * this.board.size);
-        for (let bodyPart of snake) {
+        for (let bodyPart of this.snake.body) {
             if (bodyPart.x == x && bodyPart.y == y)
                 return this.execute();
         }
-        return { x, y };
+        this.fruit.position = { x, y };
     }
 }
 
 class DetectFruitColision {
-    execute(snakeHead, fruit) {
-        return snakeHead.x == fruit.position.x && snakeHead.y == fruit.position.y
+    constructor(snake, fruit) {
+        this.snake = snake;
+        this.fruit = fruit;
+    }
+    execute() {
+        return this.snake.body[0].x == this.fruit.position.x && this.snake.body[0].y == this.fruit.position.y
     }
 }
 
@@ -210,16 +295,28 @@ class Fruit {
     }
 }
 
-addEventListener("keydown", (e) => {
-    game.execCommand(e.code);
-});
-
 const board = new Board(15);
-const canvas = new Canvas(board);
 const fruit = new Fruit();
 const snake = new Snake(board);
-const createFruit = new CreateFruit(board);
-const detectFruitColision = new DetectFruitColision();
-const detectSnakeColision = new DetectSnakeColision();
-const game = new Game(canvas, fruit, snake, createFruit, detectFruitColision, board, detectSnakeColision);
-game.start();
+const canvas = new Canvas(board, snake, fruit);
+const createFruit = new CreateFruit(board, snake, fruit);
+createFruit.execute();
+const detectFruitColision = new DetectFruitColision(snake, fruit);
+const detectSnakeColision = new DetectSnakeColision(snake, board);
+const moveSnake = new MoveSnake(snake, board, detectFruitColision, createFruit);
+const gameLoopEvent = new GameLoopEvent();
+gameLoopEvent.attach(moveSnake)
+gameLoopEvent.attach(canvas)
+gameLoopEvent.attach(detectSnakeColision)
+gameLoopEvent.attach(detectFruitColision)
+const upMove = new UpMove(snake);
+const downMove = new DownMove(snake);
+const rightMove = new RightMove(snake);
+const leftMove = new LeftMove(snake);
+const restart = new Restart(snake, board, createFruit);
+const keyboardEvent = new KeyboardEvent();
+keyboardEvent.attach(upMove)
+keyboardEvent.attach(downMove)
+keyboardEvent.attach(rightMove)
+keyboardEvent.attach(leftMove)
+keyboardEvent.attach(restart)
