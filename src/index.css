@@ -9,8 +9,3 @@
     display: grid;
     grid-template-columns: auto auto auto;
 }
-
-canvas {
-    grid-column: 2 / 3;
-    border: 1px solid;
-}

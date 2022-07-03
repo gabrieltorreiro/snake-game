@@ -1,29 +1,29 @@
-# Jogo Snake
+# Snake Game
 
-> Essa é uma implementação de um jogo popular conhecido como snake (jogo da cobrinha).
+> This is an implementation of a popular game known as snake.
 
-**O jogo da cobrinha (snake) foi criado em 1976 e após isso surgiram diversas versões.** <br>
-**É um jogo simples, porem divertido.**
+**The snake game was created in 1976 and after that several versions appeared.** <br>
+**It's a simple but fun game.**
 
 
 ## Screenshots
 ![Screenshot](/screenshot1.png)
 ![Screenshot](/screenshot2.png)
 
-## Comandos do jogo
+## Instructions
 
-* Use as setas do teclado para mover
-* Pegue os quadrados vermelhos para ganhar ponto
+* Use the arrow keys to move
+* Catch the red squares to earn points
 
 ## Como rodar?
 
-1. Método
+1. Way
 
-```
+```bash
     git clone https://github.com/Gabrieltorreiro/snake-game
-    abra index.html no seu browser.
+    npm start
 ```
 
-2. Método
+2. Way
 
-    Acesse o link: [site do jogo](https://master.d29kyj1e9b236o.amplifyapp.com/)
+    Open link: [game demo](https://master.d29kyj1e9b236o.amplifyapp.com/)
