@@ -15,12 +15,13 @@
 * Use the arrow keys to move
 * Catch the red squares to earn points
 
-## Como rodar?
+## How to run
 
 1. Way
 
 ```bash
     git clone https://github.com/Gabrieltorreiro/snake-game
+    npm install
     npm start
 ```
 
